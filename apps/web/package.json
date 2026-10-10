@@ -1,0 +1,52 @@
+{
+  "name": "zy-agents-web",
+  "private": true,
+  "license": "MIT",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:test": "vite build --mode test",
+    "build:prod": "vite build --mode production",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "test:timeline-v3": "esbuild tests/timeline-store.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-timeline-store-test.mjs && node node_modules/.tmp/zy-timeline-store-test.mjs",
+    "test:session-ordering": "esbuild tests/session-ordering.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-session-ordering-test.mjs && node node_modules/.tmp/zy-session-ordering-test.mjs",
+    "test:chat-cancellation": "esbuild tests/turn-stop-flow.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-turn-stop-flow-test.mjs && node node_modules/.tmp/zy-turn-stop-flow-test.mjs",
+    "test:user-bound-projects": "esbuild tests/user-bound-projects.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-user-bound-projects-test.mjs && node node_modules/.tmp/zy-user-bound-projects-test.mjs",
+    "test:new-session-project-context": "esbuild tests/new-session-project-context.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-new-session-project-context-test.mjs && node node_modules/.tmp/zy-new-session-project-context-test.mjs",
+    "test:code-platform": "esbuild tests/code-platform-contract.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-code-platform-contract-test.mjs && node node_modules/.tmp/zy-code-platform-contract-test.mjs",
+    "test:desktop-auth": "esbuild tests/desktop-node-session.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-desktop-node-session-test.mjs && node node_modules/.tmp/zy-desktop-node-session-test.mjs",
+    "test:desktop-tools": "esbuild tests/desktop-tool-tabs.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-desktop-tool-tabs-test.mjs && node node_modules/.tmp/zy-desktop-tool-tabs-test.mjs",
+    "test:client-uuid": "esbuild tests/client-uuid.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-client-uuid-test.mjs && node node_modules/.tmp/zy-client-uuid-test.mjs",
+    "test:browser-surface": "esbuild tests/browser-surface-visibility.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-browser-surface-visibility-test.mjs && node node_modules/.tmp/zy-browser-surface-visibility-test.mjs",
+    "test:clipboard": "esbuild tests/copy-text-to-clipboard.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-copy-text-to-clipboard-test.mjs && node node_modules/.tmp/zy-copy-text-to-clipboard-test.mjs",
+    "test:scheduled-task-time": "esbuild tests/scheduled-task-time.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/zy-scheduled-task-time-test.mjs && node node_modules/.tmp/zy-scheduled-task-time-test.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.10.4",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/state": "^6.7.0",
+    "@codemirror/view": "^6.43.3",
+    "@vicons/ionicons5": "^0.13.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "axios": "^1.6.0",
+    "codemirror": "^6.0.2",
+    "fabric": "^6.9.1",
+    "highlight.js": "^11.11.1",
+    "naive-ui": "^2.44.1",
+    "pdfjs-dist": "^5.6.205",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "5.6.3",
+    "vite": "^5.1.0",
+    "vue-tsc": "2.1.10"
+  }
+}

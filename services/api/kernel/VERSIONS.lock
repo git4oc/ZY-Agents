@@ -1,0 +1,45 @@
+# ===========================================================================
+# ZY-Agents · DSH 内核版本锁（services/api/kernel/VERSIONS.lock）
+# ---------------------------------------------------------------------------
+# 声明 0.2.0-rc.1 列车版本 + 每包 integrity（人可审计）。见 docs/03 §8.1。
+# 纪律（docs/03 §9.2）：
+#   - 17 个 @deepseek-ai/dsh* 全部精确 pin 同版本，无 ^ 无 ~；
+#   - @deepseek-ai/cordis* 与 fflate 单独 pin，不走 dsh 列车；
+#   - floating_versions: false 写死，兜底 CI 逐字比对（node 侧 package.json 的
+#     `floating_versions` 语义见 services/api/kernel/compat-matrix.yaml）。
+# 真实 integrity（sha512）由 npm pack 后计算；base64 占位需在锁定前回填。
+# ===========================================================================
+dsh_train: 0.2.0-rc.1
+rollback_train: 0.1.7-rc.2
+admitted_at: 2026-09-29
+
+policy:
+  floating_versions: false
+  mutate_installed_runtime_in_place: false
+  dsh_core_fork: prohibited
+
+packages:                  # 17 个，全部 == dsh_train
+  "@deepseek-ai/dsh":                { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-agent":          { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-agent-preset":   { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-base":           { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-launch-environment": { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-llm":            { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-scope":          { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-sdk-minimal":    { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-session":        { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-session-reference": { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-token-meter":    { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-tools":          { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-usage":          { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-utils":          { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-vfs":            { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-workflow-ptc":   { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/dsh-workspace":      { version: 0.2.0-rc.1, integrity: "__fill_after_npm_pack__" }
+
+independent:               # ★ 不跟 dsh_train 走（docs/03 §7.1 修正说明）
+  "@deepseek-ai/cordis":             { version: 4.0.4,  integrity: "__fill_after_npm_pack__" }
+  "@deepseek-ai/cordis-plugin-timer": { version: 1.1.6,  integrity: "__fill_after_npm_pack__" }
+  "fflate":                          { version: 0.8.3,  integrity: "__fill_after_npm_pack__" }
+
+source_mapping: unverified-by-upstream

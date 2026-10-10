@@ -1,0 +1,47 @@
+name: kernel-upgrade
+
+# 每周一 03:23 UTC 探测上游 DSH 新版本 + 手动触发。
+# **只产出报告，不动线上**（docs/01 §10 / docs/03 §9.1）。
+# 禁止原地替换已安装运行时；候选版本只在隔离工作区评估。
+
+on:
+  schedule:
+    - cron: "23 3 * * 1"          # 与 services/api/kernel/compat-matrix.yaml 的 probe_schedule 一致
+  workflow_dispatch:
+    inputs:
+      candidate:
+        description: '候选版本（如 0.2.0-rc.2）；留空则探测 latest 列车'
+        required: false
+
+jobs:
+  probe:
+    name: Probe & evaluate candidate (report only)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: npm auth (private registry scopes, no-op in public)
+        run: echo "no registry auth required for public @deepseek-ai/*"
+      - name: Evaluate candidate in isolated workspace
+        run: |
+          CANDIDATE="${{ github.event.inputs.candidate }}"
+          python scripts/kernel_upgrade/evaluate.py "${CANDIDATE:-auto}"
+      - name: Render report (isolated; never modifies lock/installed)
+        run: |
+          ls -la .kernel-upgrade-report/ 2>/dev/null || echo "no report dir produced"
+
+  guardrails:
+    name: Guardrails (must not mutate tracked state)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm no production state touched
+        run: |
+          echo "This workflow is REPORT-ONLY by construction. VERSIONS.lock / compat-matrix.yaml / package.json are unchanged unless a human merges the proposed upgrade PR."

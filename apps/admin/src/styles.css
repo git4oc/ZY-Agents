@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #2563eb;
+  --brand-accent: #0ea5e9;
+  --app-bg: #f5f7fa;
+  --app-border: #e5e7eb;
+  --app-text: #111827;
+  --app-muted: #6b7280;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #app {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    @apply bg-slate-100 text-slate-900 font-sans text-sm antialiased;
+  }
+}
+
+@layer components {
+  .page {
+    @apply p-4 sm:p-5 md:p-6 lg:p-7 pb-10 max-w-[1600px] mx-auto w-full;
+  }
+
+  .page-title {
+    @apply m-0 text-xl font-bold tracking-tight text-slate-900;
+  }
+
+  .page-subtitle {
+    @apply mt-1.5 mb-0 text-[13px] text-slate-500;
+  }
+
+  .panel {
+    @apply bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm;
+  }
+
+  .panel + .panel {
+    @apply mt-4;
+  }
+
+  .panel-title {
+    @apply m-0 mb-1 text-[15px] font-semibold text-slate-800;
+  }
+
+  .panel-hint {
+    @apply mb-3.5 text-xs text-slate-500 leading-relaxed;
+  }
+
+  .toolbar {
+    @apply flex items-center gap-2.5 flex-wrap mb-3.5;
+  }
+
+  .mono {
+    @apply font-mono text-xs;
+  }
+
+  .muted {
+    @apply text-slate-500;
+  }
+}

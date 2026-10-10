@@ -1,0 +1,217 @@
+{
+  "__init__.py": {
+    "classes": {},
+    "constants": {}
+  },
+  "commands.py": {
+    "classes": {
+      "CancelSessionRequest": {
+        "fields": {
+          "cause": "str",
+          "schema_version": "Literal['zy.agent-kernel.v1']",
+          "session_id": "str"
+        },
+        "members": {},
+        "methods": []
+      },
+      "ContentBlock": {
+        "fields": {
+          "data": "dict[str, Any]",
+          "type": "Literal['text', 'image', 'document', 'artifact_ref']"
+        },
+        "members": {},
+        "methods": []
+      },
+      "ContractModel": {
+        "fields": {},
+        "members": {},
+        "methods": []
+      },
+      "CreateRuntimeRequest": {
+        "fields": {
+          "isolation_key": "str",
+          "org_unit_id": "str",
+          "profile_version": "str",
+          "schema_version": "Literal['zy.agent-kernel.v1']"
+        },
+        "members": {},
+        "methods": []
+      },
+      "CreateSessionRequest": {
+        "fields": {
+          "runtime_id": "str",
+          "schema_version": "Literal['zy.agent-kernel.v1']",
+          "session_spec": "SessionSpec"
+        },
+        "members": {},
+        "methods": []
+      },
+      "SendMode": {
+        "fields": {},
+        "members": {
+          "FOLLOWUP": "'followup'",
+          "PROMPT": "'prompt'",
+          "STEER": "'steer'"
+        },
+        "methods": []
+      },
+      "SendRequest": {
+        "fields": {
+          "content": "list[ContentBlock]",
+          "mode": "SendMode",
+          "request_id": "str",
+          "schema_version": "Literal['zy.agent-kernel.v1']",
+          "session_id": "str",
+          "temporal_context": "TemporalContext | None",
+          "turn_context": "dict[str, Any]"
+        },
+        "members": {},
+        "methods": []
+      },
+      "SessionSpec": {
+        "fields": {
+          "conversation_id": "str",
+          "execution_location": "Literal['server']",
+          "metadata": "dict[str, Any]",
+          "org_unit_id": "str",
+          "preset_id": "str",
+          "profile_version": "str",
+          "user_id": "str"
+        },
+        "members": {},
+        "methods": []
+      },
+      "SessionStatus": {
+        "fields": {},
+        "members": {
+          "CANCELLING": "'cancelling'",
+          "CREATING": "'creating'",
+          "DISPOSED": "'disposed'",
+          "FAILED": "'failed'",
+          "IDLE": "'idle'",
+          "RUNNING": "'running'",
+          "WAITING": "'waiting'"
+        },
+        "methods": []
+      },
+      "TemporalContext": {
+        "fields": {
+          "captured_at_utc": "datetime",
+          "user_local_time": "datetime",
+          "user_timezone": "str"
+        },
+        "members": {},
+        "methods": []
+      }
+    },
+    "constants": {}
+  },
+  "errors.py": {
+    "classes": {
+      "KernelError": {
+        "fields": {
+          "code": "str",
+          "details": "dict[str, Any]",
+          "message": "str",
+          "retryable": "bool",
+          "schema_version": "Literal['zy.agent-kernel.v1']"
+        },
+        "members": {},
+        "methods": [
+          "_validate_code"
+        ]
+      }
+    },
+    "constants": {}
+  },
+  "events.py": {
+    "classes": {
+      "KernelEventEnvelope": {
+        "fields": {
+          "cursor": "int",
+          "event_id": "str",
+          "occurred_at": "datetime",
+          "parent_session_id": "str | None",
+          "payload": "dict[str, Any]",
+          "profile_version": "str",
+          "runtime_id": "str",
+          "schema_version": "Literal['zy.kernel-event.v1']",
+          "session_id": "str",
+          "source": "KernelEventSource",
+          "type": "str"
+        },
+        "members": {},
+        "methods": []
+      },
+      "KernelEventSource": {
+        "fields": {
+          "kernel": "Literal['dsh']",
+          "kernel_version": "str",
+          "native_event_type": "str | None"
+        },
+        "members": {},
+        "methods": []
+      }
+    },
+    "constants": {}
+  },
+  "handles.py": {
+    "classes": {
+      "RuntimeHandle": {
+        "fields": {
+          "isolation_key": "str",
+          "kernel": "Literal['dsh']",
+          "kernel_version": "str",
+          "model_instance_id": "str | None",
+          "profile_version": "str",
+          "runtime_id": "str",
+          "schema_version": "Literal['zy.agent-kernel.v1']"
+        },
+        "members": {},
+        "methods": []
+      },
+      "SessionHandle": {
+        "fields": {
+          "conversation_id": "str",
+          "preset_id": "str",
+          "profile_version": "str",
+          "runtime_id": "str",
+          "session_id": "str",
+          "status": "SessionStatus"
+        },
+        "members": {},
+        "methods": []
+      }
+    },
+    "constants": {}
+  },
+  "protocol.py": {
+    "classes": {
+      "AgentKernelContract": {
+        "fields": {},
+        "members": {},
+        "methods": [
+          "cancel",
+          "create_runtime",
+          "create_session",
+          "dispose_runtime",
+          "dispose_session",
+          "resume_session",
+          "send",
+          "subscribe"
+        ]
+      }
+    },
+    "constants": {}
+  },
+  "versions.py": {
+    "classes": {},
+    "constants": {
+      "AGENT_KERNEL_CONTRACT_VERSION": "zy.agent-kernel.v1",
+      "DSH_HOST_PROTOCOL_VERSION": "zy.dsh-host.v1",
+      "KERNEL_EVENT_VERSION": "zy.kernel-event.v1",
+      "KERNEL_PRESET_ID": "zy-enterprise",
+      "RUNTIME_PROFILE_SCHEMA_VERSION": "zy.runtime-profile.v1"
+    }
+  }
+}

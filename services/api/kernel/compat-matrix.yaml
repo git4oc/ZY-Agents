@@ -1,0 +1,24 @@
+# ===========================================================================
+# ZY-Agents · 升级兼容矩阵（services/api/kernel/compat-matrix.yaml）
+# ---------------------------------------------------------------------------
+# 机读策略，CI 对 kernel-host/package.json 的依赖逐字比对（docs/03 §8.2 / §9.1）：
+#   改任何一个字即报 "policy changed without contract review"。
+# ===========================================================================
+floating_versions: false
+mutate_installed_runtime_in_place: false
+
+forbidden:
+  - fork_dsh_core
+  - patch_vendored_source
+
+frozen_contracts:            # 改动即 CI 失败
+  host_protocol: zy.dsh-host.v1
+  kernel_contract: zy.agent-kernel.v1
+  event_envelope: zy.kernel-event.v1
+
+session:
+  format_version: 4
+  cross_version_probe_required: true
+
+probe_schedule:
+  cron: "23 3 * * 1"         # 每周一 03:23（UTC），与 .github/workflows/kernel-upgrade.yml 一致

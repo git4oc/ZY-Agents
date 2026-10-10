@@ -1,0 +1,41 @@
+# ---- secrets / local env ----
+.env
+.env.*
+!.env.example
+
+# ---- runtime data (local bare-process) ----
+data/
+.devlogs/
+
+# ---- local runtime data ----
+.localdata/
+.workbuddy/
+*.log
+apps/web/tmp/
+apps/admin/tmp/
+*.timestamp-*
+.kernel-upgrade-report/
+
+# ---- python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# ---- node ----
+node_modules/
+
+# ---- web build ----
+apps/web/dist/
+apps/admin/dist/
+
+# ---- generated ----
+# 契约冻结基线（.frozen.json）由 check_contract_freeze.py 生成，属可审计产物，入库；
+# 本地临时的令牌文件在此忽略（内核升级报告见上方 local runtime data 段）
+*.auth-token

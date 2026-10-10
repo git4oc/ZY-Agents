@@ -1,0 +1,291 @@
+import { computed, onBeforeUnmount, reactive } from 'vue'
+import {
+  capabilities,
+  attachDshCodeConversation,
+  cancelDshCodeTurn,
+  createDshCodeSession,
+  decideDshCodeApproval,
+  getLatestDshTaskChanges,
+  listDshCodeApprovals,
+  listDshWorkspaces,
+  onDshCodeEvent,
+  sendDshCodeTurn,
+  subscribeDshCodeEvents,
+  unsubscribeDshCodeEvents,
+} from '../../bridge'
+import type { DshCodeSession, DshExecutionEvent, DshPendingApproval, DshWorkspace } from '../../bridge/types'
+import type { ExternalTurnHandle } from '../useTurnRuntimeStore'
+import { getLocale } from '../i18n'
+import { codeRuntimeErrorMessage } from './codeRuntimeErrors'
+import { inheritedDraftProjectContext } from './draftProjectContext'
+import { createClientUuid } from '../../lib/clientUuid'
+
+export type CodePaneState = {
+  draftId: string
+  workspace: DshWorkspace | null
+  session: DshCodeSession | null
+  worktree: boolean
+  sourceRef: string
+  busy: boolean
+  stopping: boolean
+  error: string
+  cursor: number
+  events: DshExecutionEvent[]
+  approvals: DshPendingApproval[]
+  approvalBusy: Record<string, boolean>
+}
+
+type ChatRuntimeBoundary = {
+  beginExternalTurn(key: string, text: string, sessionId: string): ExternalTurnHandle
+}
+
+function draftState(): CodePaneState {
+  return reactive({
+    draftId: createClientUuid(), workspace: null, session: null, worktree: false, sourceRef: '',
+    busy: false, stopping: false, error: '', cursor: -1, events: [], approvals: [], approvalBusy: {},
+  })
+}
+
+function terminal(event: DshExecutionEvent): boolean {
+  return event.type === 'run.completed' || event.type === 'run.failed' || event.type === 'run.cancelled'
+}
+
+/** Holds desktop-only Code task state while handing all execution off to DSH. */
+export function useHostCodeRuntime(chat: ChatRuntimeBoundary) {
+  const panes = reactive(new Map<string, CodePaneState>())
+  const turns = new Map<string, ExternalTurnHandle>()
+  const subscribed = new Set<string>()
+
+  const eventDispose = capabilities.codeExecution
+    ? onDshCodeEvent((sessionId, event) => {
+        const entry = [...panes.values()].find(item => item.session?.kernel_session_id === sessionId)
+        if (!entry || event.stream_seq <= entry.cursor) return
+        entry.cursor = event.stream_seq
+        entry.events.push(event)
+        if (entry.events.length > 10_000) entry.events.splice(0, entry.events.length - 10_000)
+        turns.get(sessionId)?.apply(event)
+        if (event.item_kind === 'approval') void refreshApprovals(entry)
+        if (terminal(event)) {
+          const turn = turns.get(sessionId)
+          turn?.finish()
+          turns.delete(sessionId)
+          entry.busy = false
+          entry.stopping = false
+          void refreshApprovals(entry)
+          if (turn) void getLatestDshTaskChanges(sessionId).then(changes => {
+            if (changes?.files.length) turn.setCodeChanges(changes)
+          }).catch(error => { console.warn('[code] could not summarize task changes', error) })
+        }
+      })
+    : () => {}
+
+  function stateFor(key: string): CodePaneState {
+    let state = panes.get(key)
+    if (!state) {
+      state = draftState()
+      panes.set(key, state)
+    }
+    return state
+  }
+
+  async function attach(key: string, conversationId: string) {
+    if (!capabilities.codeExecution) return null
+    const state = stateFor(key)
+    state.error = ''
+    try {
+      const session = await attachDshCodeConversation(conversationId)
+      if (!session) return null
+      state.session = session
+      state.worktree = session.worktree
+      state.sourceRef = session.source_ref || (session.git_branch ? `refs/heads/${session.git_branch}` : 'HEAD')
+      const workspaces = await listDshWorkspaces(session.model_instance_id)
+      // A worktree Workspace stays an internal execution detail. The UI keeps
+      // showing the source project the user picked.
+      state.workspace = workspaces.find(item => item.workspace_id === session.source_workspace_id) || null
+      await ensureSubscribed(state)
+      await refreshApprovals(state)
+      return session
+    } catch (error) {
+      state.error = codeRuntimeErrorMessage(error, getLocale())
+      return null
+    }
+  }
+
+  function clear(key: string) {
+    const state = stateFor(key)
+    if (state.session) throw new Error('a running Code task is not allowed to clear its Workspace')
+    state.workspace = null
+    state.sourceRef = ''
+    state.error = ''
+  }
+
+  function setWorktree(key: string, enabled: boolean) {
+    const state = stateFor(key)
+    if (state.session) throw new Error('a running Code task is not allowed to change isolation')
+    state.worktree = enabled
+  }
+
+  function setSourceRef(key: string, sourceRef: string) {
+    const state = stateFor(key)
+    if (state.session) throw new Error('a running Code task is not allowed to change its start branch')
+    state.sourceRef = sourceRef || 'HEAD'
+  }
+
+  function setWorkspaceBranch(key: string, branch: string) {
+    const state = stateFor(key)
+    if (!state.workspace) return
+    state.workspace = { ...state.workspace, git_branch: branch || undefined }
+    state.sourceRef = branch ? `refs/heads/${branch}` : 'HEAD'
+  }
+
+  function setDraftProject(key: string, workspace: DshWorkspace, worktree: boolean) {
+    const state = stateFor(key)
+    if (state.session) throw new Error('a running Code task is not allowed to switch Workspace')
+    state.workspace = workspace
+    state.worktree = worktree
+    state.sourceRef = workspace.git_branch ? `refs/heads/${workspace.git_branch}` : 'HEAD'
+  }
+
+  function inheritDraftProject(fromKey: string, toKey: string): boolean {
+    const target = stateFor(toKey)
+    if (target.session) throw new Error('a running Code task is not allowed to inherit a Workspace')
+    const inherited = inheritedDraftProjectContext(stateFor(fromKey))
+    if (!inherited) return false
+    target.workspace = inherited.workspace
+    target.worktree = inherited.worktree
+    target.sourceRef = inherited.sourceRef
+    return true
+  }
+
+  function transferDraft(fromKey: string, toKey: string) {
+    const source = stateFor(fromKey)
+    if (source.session) throw new Error('a running Code task is not allowed to be transferred')
+    const target = stateFor(toKey)
+    target.workspace = source.workspace
+    target.worktree = source.worktree
+    target.sourceRef = source.sourceRef
+    source.workspace = null
+    source.sourceRef = ''
+    source.error = ''
+    return target
+  }
+
+  async function ensureSubscribed(state: CodePaneState) {
+    const sessionId = state.session?.kernel_session_id
+    if (!sessionId || subscribed.has(sessionId)) return
+    await subscribeDshCodeEvents(sessionId, state.cursor)
+    subscribed.add(sessionId)
+  }
+
+  async function refreshApprovals(state: CodePaneState) {
+    const sessionId = state.session?.kernel_session_id
+    if (!sessionId) return
+    try { state.approvals = await listDshCodeApprovals(sessionId) }
+    catch (error) { state.error = codeRuntimeErrorMessage(error, getLocale()) }
+  }
+
+  async function send(key: string, text: string, modelId?: string) {
+    const state = stateFor(key)
+    const workspace = state.workspace
+    if (!workspace) return false
+    if (!capabilities.codeExecution) throw new Error('local Code execution is not available')
+    if (state.busy) throw new Error('a Code task is already in progress')
+    state.busy = true
+    state.error = ''
+    try {
+      if (!state.session) {
+        state.session = await createDshCodeSession(
+          workspace.workspace_id, state.draftId, text.trim().slice(0, 120) || 'New Code task', modelId, state.worktree,
+          state.sourceRef || 'HEAD',
+        )
+      }
+      const sessionId = state.session.kernel_session_id
+      const conversationId = state.session.conversation_id
+      if (!conversationId) throw new Error('desktop Code Session did not get committed to history')
+      await ensureSubscribed(state)
+      turns.set(sessionId, chat.beginExternalTurn(key, text, conversationId))
+      await sendDshCodeTurn(sessionId, text)
+      await refreshApprovals(state)
+      return true
+    } catch (error) {
+      state.error = codeRuntimeErrorMessage(error, getLocale())
+      turns.get(state.session?.kernel_session_id || '')?.finish()
+      turns.delete(state.session?.kernel_session_id || '')
+      state.busy = false
+      throw error
+    }
+  }
+
+  async function stop(key: string) {
+    const state = stateFor(key)
+    const sessionId = state.session?.kernel_session_id
+    if (!sessionId || state.stopping) return false
+    state.stopping = true
+    state.error = ''
+    try {
+      const result = await cancelDshCodeTurn(sessionId)
+      if (!result.accepted || result.turn_pending || result.jobs_pending) {
+        throw new Error('DSH Runtime gave no confirmation that the turn had stopped')
+      }
+      turns.get(sessionId)?.finish()
+      turns.delete(sessionId)
+      state.busy = false
+      if (result.runtime_recovered) {
+        for (const id of subscribed) await unsubscribeDshCodeEvents(id)
+        subscribed.clear()
+        for (const entry of panes.values()) {
+          const id = entry.session?.kernel_session_id
+          if (!id) continue
+          turns.get(id)?.finish()
+          turns.delete(id)
+          entry.busy = false
+          entry.stopping = false
+          await ensureSubscribed(entry)
+        }
+      }
+      return true
+    } catch (error) {
+      state.error = codeRuntimeErrorMessage(error, getLocale())
+      throw error
+    } finally {
+      state.stopping = false
+    }
+  }
+
+  async function decide(
+    key: string, approvalId: string, decision: 'approved' | 'rejected', scope: 'once' | 'session',
+  ) {
+    const state = stateFor(key)
+    const sessionId = state.session?.kernel_session_id
+    if (!sessionId) throw new Error('Code Session is not available')
+    state.approvalBusy[approvalId] = true
+    state.error = ''
+    try {
+      await decideDshCodeApproval(sessionId, approvalId, decision, scope)
+      await refreshApprovals(state)
+    } catch (error) {
+      state.error = codeRuntimeErrorMessage(error, getLocale())
+      throw error
+    } finally { delete state.approvalBusy[approvalId] }
+  }
+
+  function needsAssistance(sessionId: string) {
+    return [...panes.values()].some(state => state.session?.conversation_id === sessionId && state.approvals.length > 0)
+  }
+
+  const activeSessions = computed(() => [...panes.values()].filter(state => state.session))
+
+  function reset() {
+    for (const sessionId of subscribed) void unsubscribeDshCodeEvents(sessionId)
+    subscribed.clear()
+    turns.clear()
+    panes.clear()
+  }
+
+  onBeforeUnmount(() => {
+    eventDispose()
+    for (const sessionId of subscribed) void unsubscribeDshCodeEvents(sessionId)
+  })
+
+  return { stateFor, attach, clear, setWorktree, setSourceRef, setWorkspaceBranch, setDraftProject, inheritDraftProject, transferDraft, send, stop, decide, needsAssistance, activeSessions, reset }
+}

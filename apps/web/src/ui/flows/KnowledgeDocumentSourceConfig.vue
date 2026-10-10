@@ -1,0 +1,97 @@
+<template>
+  <section class="material-config" @click.stop>
+    <header class="config-heading">
+      <span class="heading-icon" aria-hidden="true">▤</span>
+      <div><strong>{{ t('材料从哪里来') }}</strong><p>{{ t('选择这一步读取的材料，供后续步骤使用') }}</p></div>
+    </header>
+
+    <div class="source-choices" role="group" :aria-label="t('材料来源')">
+      <button type="button" class="source-choice" :class="{ selected: sourceType === 'upload' }"
+        :aria-pressed="sourceType === 'upload'" @click="setSourceType('upload')">
+        <span class="choice-icon upload-icon" aria-hidden="true">↑</span>
+        <span class="choice-copy"><strong>{{ t('用户上传') }}</strong><small>{{ t('运行时由用户提供文件') }}</small></span>
+        <span class="choice-check" aria-hidden="true">✓</span>
+      </button>
+      <button type="button" class="source-choice" :class="{ selected: sourceType === 'knowledge_document' }"
+        :aria-pressed="sourceType === 'knowledge_document'" @click="setSourceType('knowledge_document')">
+        <span class="choice-icon knowledge-icon" aria-hidden="true">▤</span>
+        <span class="choice-copy"><strong>{{ t('知识库文档') }}</strong><small>{{ t('读取已解析的指定文档') }}</small></span>
+        <span class="choice-check" aria-hidden="true">✓</span>
+      </button>
+    </div>
+
+    <div v-if="sourceType === 'knowledge_document'" class="source-detail">
+      <div class="field-heading"><strong>{{ t('选择文档') }}</strong><span>{{ t('我的文档及共享给我的文档') }}</span></div>
+      <PersonalKnowledgeDocumentPicker :value="String(businessConfig.knowledgeSourceId || '')"
+        @update:value="setDocument" />
+      <p class="field-hint">{{ t('支持按目录筛选、搜索名称和翻页；只可选择已解析文档') }}</p>
+    </div>
+    <div v-else class="source-detail upload-detail">
+      <span class="detail-dot" aria-hidden="true"></span>
+      <span>{{ t('用户发起任务时上传文件；这里无需提前选择文件。') }}</span>
+    </div>
+
+    <div class="output-field">
+      <div class="field-heading"><strong>{{ t('给这份材料起个名字') }}</strong><span>{{ t('后续节点会用这个名字引用') }}</span></div>
+      <n-input :value="outputAlias" size="medium" :aria-label="t('材料输出名')" :placeholder="t('例如：待审合同、审核规则')"
+        @update:value="(value: string) => emit('update:outputAlias', value)" />
+    </div>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { t } from '../../hooks/i18n';
+import PersonalKnowledgeDocumentPicker from './PersonalKnowledgeDocumentPicker.vue';
+
+const props = defineProps<{ businessConfig: Record<string, any>; outputAlias: string }>();
+const emit = defineEmits<{
+  'update:businessConfig': [value: Record<string, any>];
+  'update:outputAlias': [value: string];
+}>();
+const sourceType = computed(() => String(props.businessConfig.sourceType || 'upload'));
+
+function patch(value: Record<string, any>) {
+  const config = { ...props.businessConfig, ...value };
+  delete config.sourceRole;
+  emit('update:businessConfig', config);
+}
+function setSourceType(value: string) {
+  if (value === sourceType.value) return;
+  patch({ sourceType: value, knowledgeScope: value === 'knowledge_document' ? 'personal' : '', knowledgeSourceId: '' });
+}
+function setDocument(value: string) {
+  patch({ knowledgeScope: 'personal', knowledgeSourceId: value });
+}
+</script>
+
+<style scoped>
+.material-config { margin: 14px 0 4px; padding: 18px; border: 1px solid #e2e9f4; border-radius: 16px; background: #fbfcff; }
+.config-heading { display: flex; align-items: center; gap: 11px; margin-bottom: 15px; }
+.heading-icon { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 10px; background: #eaf1ff; color: #3768dc; font-size: 19px; }
+.config-heading strong { display: block; color: #1e2d46; font-size: 14px; }
+.config-heading p { margin: 2px 0 0; color: #718098; font-size: 12px; }
+.source-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.source-choice { display: flex; align-items: center; gap: 11px; min-width: 0; min-height: 72px; padding: 12px 14px; border: 1px solid #e0e6ef; border-radius: 12px; background: #fff; text-align: left; cursor: pointer; transition: border-color .16s, box-shadow .16s, background .16s; }
+.source-choice:hover { border-color: #9db7f5; }
+.source-choice:focus-visible { outline: 2px solid #4678ed; outline-offset: 2px; }
+.source-choice.selected { border-color: #6d94f5; background: #f4f7ff; box-shadow: 0 0 0 2px #e6edff inset; }
+.choice-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 10px; font-size: 20px; font-weight: 600; }
+.upload-icon { color: #3768dc; background: #eaf1ff; }
+.knowledge-icon { color: #6976cb; background: #eff0ff; }
+.choice-copy { display: grid; gap: 3px; min-width: 0; }
+.choice-copy strong { color: #25344c; font-size: 13px; }
+.choice-copy small { color: #65758c; font-size: 12px; }
+.choice-check { display: grid; place-items: center; flex: 0 0 18px; height: 18px; margin-left: auto; border: 1px solid #cbd5e1; border-radius: 50%; color: transparent; font-size: 11px; }
+.selected .choice-check { border-color: #4775e7; background: #4775e7; color: #fff; }
+.source-detail { margin-top: 13px; padding: 14px; border: 1px solid #e8edf5; border-radius: 11px; background: #fff; }
+.upload-detail { display: flex; align-items: center; gap: 9px; color: #53647c; font-size: 12px; }
+.detail-dot { flex: 0 0 7px; height: 7px; border-radius: 50%; background: #4f7fec; }
+.field-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 8px; }
+.field-heading strong { color: #2c3c55; font-size: 12px; font-weight: 700; }
+.field-heading span { color: #66768c; font-size: 12px; }
+.field-hint { margin: 7px 0 0; font-size: 11px; }
+.field-hint { color: #8090a6; }
+.output-field { margin-top: 15px; }
+@media (max-width: 680px) { .material-config { padding: 14px; } .source-choices { grid-template-columns: 1fr; } }
+</style>
