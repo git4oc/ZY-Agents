@@ -5,6 +5,7 @@
 #   make bootstrap  生成密钥 (.env)
 #   make mongo-up   本地起 mongo（可选；若已有实例可跳过）
 #   make redis-up   本地起 redis（可选；若已有实例可跳过）
+#   make init-db    初始化数据库（索引 + 种子账号 + 工具目录，幂等）
 #   make api        前台起主服务 uvicorn (127.0.0.1:8000)
 #   make kernel     前台起内核宿主 node    (127.0.0.1:8101)
 #   make web        前台起 web 静态服务     (127.0.0.1:4173)
@@ -29,9 +30,12 @@ WEB_PORT     ?= 4173
 MONGO_PORT   ?= 27017
 REDIS_PORT   ?= 6379
 
+# venv python（Windows 优先，回落 Unix）
+PY           := $(shell test -f services/api/.venv/Scripts/python.exe && echo "services/api/.venv/Scripts/python.exe" || echo "services/api/.venv/bin/python")
+
 DEV_LOG_DIR  := .devlogs
 
-.PHONY: help bootstrap mongo-up mongo-down redis-up redis-down \
+.PHONY: help bootstrap mongo-up mongo-down redis-up redis-down init-db \
         api kernel web dev logs down stop check lint
 
 help: ## 显示可用指令
@@ -56,6 +60,10 @@ redis-up: ## 本地起 redis
 
 redis-down:
 	@echo "请自行结束 redis-server 进程"
+
+init-db: ## 初始化数据库（索引 + 种子账号 + 工具目录，幂等）
+	$(ENV) cd services/api && $(PY) scripts/init_db.py
+	@echo "→ 完成。数据库已就绪（种子账号见 deploy/SEED-ACCOUNTS.md）"
 
 api: ## 前台起主服务 uvicorn
 	$(ENV) cd services/api && uvicorn app.main:app --host $(API_HOST) --port $(API_PORT) --reload

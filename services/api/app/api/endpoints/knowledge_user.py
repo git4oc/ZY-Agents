@@ -245,7 +245,26 @@ async def get_document(
     document_id: str, ctx: RequestContext = Depends(get_ctx)
 ) -> dict[str, Any]:
     doc = await _load_visible(ctx, document_id)
-    return _doc_to_personal(doc, ctx)
+    item = _doc_to_personal(doc, ctx)
+    # 视角裁决：grant 接收者非 owner（与 _shared_documents 列表端点同源）。
+    # 此前 isOwner 硬编码 True，grant 接收者会被误标为 owner，
+    # 前端据此误调 owner-only 的 grants 端点 → 404。
+    owner_id = str(doc.get("owner_user_id") or "")
+    if owner_id and owner_id != str(_uid(ctx.user_id)):
+        grant = await mongo.get_collection(_SHARES).find_one(
+            {
+                "org_unit_id": ctx.org_unit_id,
+                "document_id": document_id,
+                "recipient_user_id": ctx.user_id,
+                "status": "active",
+            }
+        )
+        item["accessStatus"] = "active"
+        item["isOwner"] = False
+        item["canReshare"] = bool(grant.get("can_reshare")) if grant else False
+        item["canShare"] = item["canReshare"]
+        item["grantedByUserId"] = str(grant.get("granted_by") or "") if grant else ""
+    return item
 
 
 class AskBody(BaseModel):

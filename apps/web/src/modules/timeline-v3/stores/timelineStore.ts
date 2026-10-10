@@ -57,6 +57,10 @@ export function createExecutionStoreV3() {
     const payload = { ...(existing?.payload || {}), ...(event.payload || {}) }
     if (event.type === 'item.delta') {
       payload.text = String(existing?.payload?.text || '') + String(event.payload?.text || '')
+    } else if (event.payload?.text === '' && existing?.payload?.text) {
+      // 收尾帧带空 text 时不覆盖 delta 已积累的内容（commentary 收尾如此），
+      // 否则思考文本被清空、时间线展开为空白。
+      payload.text = existing.payload.text
     }
     const nextStatus = statusFor(event.type)
     const terminalExisting = existing && ['completed', 'failed', 'cancelled', 'abandoned'].includes(existing.status)

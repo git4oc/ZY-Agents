@@ -66,9 +66,16 @@ make bootstrap
 #    MODEL_PROVIDER_API_KEY=...
 #    MODEL_PROVIDER_MODEL=...
 
-# 3. 一键启动全部服务（api / kernel / web + mongo / redis）
+# 3. 初始化数据库（索引 + 种子账号 + 服务端工具目录，幂等可重复执行）
+make mongo-up
+make redis-up
+make init-db
+
+# 4. 一键启动全部服务（api / kernel / web + mongo / redis）
 make dev
 ```
+
+> 说明：数据库初始化也可以跳过（API 首次启动时会自动完成同样的初始化，全部幂等）；`make init-db` 的价值是**启动前显式完成并可查看初始化结果**（打印种子账号写入数、集合文档数）。本地运行数据（Mongo 数据文件、`data/`、`.localdata/`）不进仓库，git 跟踪列表只含源码与文档。
 
 启动后访问 **http://127.0.0.1:4173**（用户端）。各服务端口：主服务 API `127.0.0.1:8000`、内核宿主 `127.0.0.1:8101`、用户端 `127.0.0.1:4173`。
 

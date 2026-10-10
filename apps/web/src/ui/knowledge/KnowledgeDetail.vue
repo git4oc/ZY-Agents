@@ -81,7 +81,7 @@ async function load(includeGrants=true){
 }
 async function metadataSaved(){await load();emit('changed')}
 function feedbackRead(){if(props.item?.feedback?.unreadCount)emit('changed')}
-async function loadGrants(){if(!knowledge.value)return;grantsLoading.value=true;try{grants.value=(await fetchKnowledgeGrants(knowledge.value.id)).items}finally{grantsLoading.value=false}}
+async function loadGrants(){if(!knowledge.value)return;grantsLoading.value=true;try{grants.value=(await fetchKnowledgeGrants(knowledge.value.id)).items}catch(error){grants.value=[]}finally{grantsLoading.value=false}}
 async function shared(){await loadGrants();emit('changed')}
 async function changeReshare(grant:KnowledgeGrant,value:boolean){if(!knowledge.value)return;await updatePersonalKnowledgeGrant(knowledge.value.id,grant.userId,value);grant.canReshare=value;message.success(t('knowledge.permission_updated'))}
 function revoke(grant:KnowledgeGrant,cascade=false){if(!knowledge.value)return;dialog.warning({title:t('knowledge.revoke'),content:t(cascade?'knowledge.revoke_cascade_hint':'knowledge.revoke_single_hint'),positiveText:t('knowledge.revoke'),negativeText:t('knowledge.back'),onPositiveClick:async()=>{await revokePersonalKnowledge(knowledge.value!.id,grant.userId,cascade);message.success(t('knowledge.permission_revoked'));await loadGrants();emit('changed')}})}

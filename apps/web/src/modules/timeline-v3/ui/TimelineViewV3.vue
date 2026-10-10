@@ -35,6 +35,11 @@ const showIdlePlaceholder = computed(
   () => Boolean(props.live)
     && !hasVisibleActiveRunningLeaf(rows.value, passiveRunningIds.value),
 )
+const listEmpty = computed(() =>
+  timeline.value.length === 0
+    && !showIdlePlaceholder.value
+    && !terminalWithoutAnswer.value,
+)
 const terminalWithoutAnswer = computed(
   () => !props.live && ['failed', 'cancelled', 'blocked'].includes(props.store.state.runStatus),
 )
@@ -129,6 +134,9 @@ function toggle() {
         <span>{{ terminalText }}</span>
         <small v-if="terminalDetail">{{ terminalDetail }}</small>
       </div>
+      <div v-if="listEmpty" class="timeline-v3-empty" role="status">
+        {{ t('execution.v3.no_events') }}
+      </div>
     </div>
   </section>
 </template>
@@ -153,6 +161,7 @@ function toggle() {
   animation:thinking-sheen 1.7s linear infinite;
 }
 .timeline-v3-terminal { display:flex; flex-direction:column; gap:3px; color:#b45309; font-size:13px; padding-bottom:5px; }
+.timeline-v3-empty { color:#94a3b8; font-size:12px; padding:2px 4px 6px; }
 .timeline-v3-terminal small { color:#7c5b27; font-size:12px; font-weight:400; }
 @keyframes thinking-sheen { from { background-position:100% 0; } to { background-position:-140% 0; } }
 @media (prefers-reduced-motion: reduce) {

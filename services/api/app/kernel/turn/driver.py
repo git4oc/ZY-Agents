@@ -493,6 +493,7 @@ async def start_turn_direct_relay(
     final_item_id = f"item_{request_id}"
     commentary_item_id = f"item_{request_id}_thought"
     text_buf = ""
+    thought_buf = ""
     stream_seq = 0
     final_opened = False
     commentary_opened = False
@@ -531,6 +532,7 @@ async def start_turn_direct_relay(
                         EVENT_ITEM_STARTED,
                         {"item_kind": "commentary", "item_id": commentary_item_id, "revision": 0},
                     )
+                thought_buf += delta_text
                 await emit(
                     EVENT_ITEM_DELTA,
                     {
@@ -564,7 +566,9 @@ async def start_turn_direct_relay(
     if commentary_opened:
         await emit(
             EVENT_ITEM_COMPLETED,
-            {"item_kind": "commentary", "item_id": commentary_item_id, "text": ""},
+            # 收尾帧必须带思考全文：前端 store 以 payload 合并，空 text 会
+            # 把 delta 流式积累的思考内容清空，导致时间线展开为空白。
+            {"item_kind": "commentary", "item_id": commentary_item_id, "text": thought_buf},
         )
     if final_opened:
         await emit(
