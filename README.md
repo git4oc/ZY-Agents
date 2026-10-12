@@ -122,6 +122,14 @@ ZY-Agents/
 | [04-localagent-protocol.md](docs/04-localagent-protocol.md) | 本地 Agent 协议：配对流程、帧级字段、连接状态机 |
 | [05-spec-compliance.md](docs/05-spec-compliance.md) | 合规登记：约束落点与检测手段 |
 
+## 社区讨论
+
+欢迎扫码加入微信群「dsh 企业应用开发技术」，一起交流企业级 Agent 平台架构、DSH 内核与本地工具执行的落地实践：
+
+<p align="center">
+  <img src="docs/images/wechat-group-qrcode.jpg" alt="微信群：dsh 企业应用开发技术" width="360">
+</p>
+
 ## License
 
 [MIT](LICENSE) © ZY-Agents Contributors
